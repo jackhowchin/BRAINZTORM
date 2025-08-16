@@ -11,8 +11,8 @@ This means the source code is publicly available for **evaluation, personal, and
 To discuss terms for commercial use (including internal production deployments, SaaS offerings, or integration into products), please contact:
 
 **Jack Howchin**  
-📧 [your email here]  
-🌐 [your website/LinkedIn here]  
+howchin@kth.se
+www.linkedin.com/in/jackhowchin
 
 Licenses can be tailored for:
 - Company internal tools
