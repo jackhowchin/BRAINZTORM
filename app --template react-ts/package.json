@@ -1,11 +1,18 @@
 {
-  "name": "app---template-react-ts",
+  "name": "brainztorm",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && electron-builder",
+    "check": "tsc -b",
+    "clean": "rm -rf dist dist-electron release .ts-node-out",
+    "build": "npm run check && vite build && electron-builder -m",
+    "build:mac": "npm run check && vite build && electron-builder -m",
+    "build:win": "npm run check && vite build && electron-builder -w",
+    "build:linux": "npm run check && vite build && electron-builder -l",
+    "pack": "npm run check && vite build && electron-builder --dir",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
@@ -32,6 +39,5 @@
     "vite": "^5.1.6",
     "vite-plugin-electron": "^0.28.6",
     "vite-plugin-electron-renderer": "^0.14.5"
-  },
-  "main": "dist-electron/main.js"
+  }
 }

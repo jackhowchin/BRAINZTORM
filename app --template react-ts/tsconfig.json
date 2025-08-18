@@ -1,28 +1,18 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "composite": true,
     "module": "ESNext",
-    "skipLibCheck": true,
-
-    /* Bundler mode */
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-
-    /* Types available in the renderer */
-    "types": ["vite/client", "./src/types/global"],
-
-    /* Linting */
+    "isolatedModules": false,
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+
+    /* Node/Electron typings for main & preload */
+    "types": ["node", "electron"],
+
+    /* Emit is allowed for referenced projects (even if your bundler ignores it).
+       We direct any potential output to a temp folder to keep things tidy. */
+    "outDir": "./.ts-node-out"
   },
-  "include": ["src", "electron", "src/types"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": ["electron/**/*.ts", "electron/**/*.tsx"]
 }

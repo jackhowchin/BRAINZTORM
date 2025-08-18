@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { execFile } from 'node:child_process'
 
 // --- Fix __dirname for ESM ---
 const __filename = fileURLToPath(import.meta.url)
@@ -9,14 +10,14 @@ const __dirname = path.dirname(__filename)
 
 let win: BrowserWindow | null = null
 
-// in-memory project state
+// In-memory project state
 let currentProjectRoot: string | null = null
 let suggestedTitle: string | undefined
 
 function resolvePreloadPath() {
   // electron-vite often outputs preload.mjs (dev) and preload.js (prod) depending on config
   const mjs = path.join(__dirname, 'preload.mjs')
-  const js  = path.join(__dirname, 'preload.js')
+  const js = path.join(__dirname, 'preload.js')
   if (fs.existsSync(mjs)) return mjs
   if (fs.existsSync(js)) return js
   // Fallback using URL form (works in ESM too)
@@ -44,14 +45,51 @@ function createWindow() {
 }
 
 app.whenReady().then(createWindow)
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
-app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit()
+})
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow()
+})
 
-// --------- helpers ----------
-function sanitizeName(name: string) { return name.replace(/[^\w\- ]+/g, '').trim() }
-function ensureDir(p: string) { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }) }
-function writeJson(filePath: string, data: any) { fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8') }
-function readJson<T = any>(filePath: string): T | null { try { return JSON.parse(fs.readFileSync(filePath, 'utf-8')) as T } catch { return null } }
+// --------- Helpers ----------
+function sanitizeName(name: string) {
+  return name.replace(/[^\w\- ]+/g, '').trim()
+}
+function ensureDir(p: string) {
+  if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true })
+}
+function writeJson(filePath: string, data: any) {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
+}
+function readJson<T = any>(filePath: string): T | null {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8')) as T
+  } catch {
+    return null
+  }
+}
+
+// Resolve .icns both in dev and packaged app
+function getIcnsPath() {
+  // When packaged, resourcesPath points to: <App>.app/Contents/Resources
+  const prod = path.join(process.resourcesPath || '', 'assets', 'brainztorm-folder.icns')
+  // During dev, use the source file
+  const dev = path.join(app.getAppPath(), 'src', 'assets', 'brainztorm-folder.icns')
+  return fs.existsSync(prod) ? prod : dev
+}
+
+// Apply a custom Finder icon to a folder using the `fileicon` CLI
+function setFolderIcon(folderPath: string) {
+  const icns = getIcnsPath()
+  if (!fs.existsSync(icns)) {
+    console.warn('Icon file not found:', icns)
+    return
+  }
+  execFile('fileicon', ['set', folderPath, icns], (err) => {
+    if (err) console.warn('fileicon set failed:', err.message)
+  })
+}
 
 // ---------- IPC: New Project ----------
 ipcMain.handle('project:new', async () => {
@@ -66,6 +104,7 @@ ipcMain.handle('project:new', async () => {
 
   const folderPath = res.filePath
   ensureDir(folderPath)
+
   const project = {
     title: path.basename(folderPath),
     description: '',
@@ -74,15 +113,21 @@ ipcMain.handle('project:new', async () => {
     version: 1,
   }
   writeJson(path.join(folderPath, 'project.json'), project)
+
+  // Brand the folder with the custom icon (non-fatal if it fails)
+  setFolderIcon(folderPath)
+
   currentProjectRoot = folderPath
   suggestedTitle = project.title
   return true
 })
 
+// Suggested title after creating a new project
 ipcMain.on('project:suggestedTitle', (event) => {
   event.returnValue = suggestedTitle
 })
 
+// ---------- IPC: Open Existing ----------
 ipcMain.handle('project:open', async () => {
   const res = await dialog.showOpenDialog(win!, {
     title: 'Open BRAINZTORM Project',
@@ -101,11 +146,16 @@ ipcMain.handle('project:open', async () => {
     })
     return false
   }
+
+  // Optionally brand existing folders too (safe to keep; remove if undesired)
+  setFolderIcon(folderPath)
+
   currentProjectRoot = folderPath
   suggestedTitle = (data as any).title
   return true
 })
 
+// ---------- IPC: Save from Project Setup ----------
 ipcMain.handle('project:save', async (_event, payload: { title: string; description: string; bpm?: number }) => {
   if (!currentProjectRoot) {
     await dialog.showMessageBox(win!, {
@@ -131,6 +181,7 @@ ipcMain.handle('project:save', async (_event, payload: { title: string; descript
   return true
 })
 
+// ---------- IPC: Get current project (hydrate UI) ----------
 ipcMain.handle('project:get', async () => {
   if (!currentProjectRoot) return null
   const projPath = path.join(currentProjectRoot, 'project.json')

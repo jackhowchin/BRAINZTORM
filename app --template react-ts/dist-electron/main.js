@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import { execFile } from "node:child_process";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 let win = null;
@@ -54,6 +55,21 @@ function readJson(filePath) {
     return null;
   }
 }
+function getIcnsPath() {
+  const prod = path.join(process.resourcesPath || "", "assets", "brainztorm-folder.icns");
+  const dev = path.join(app.getAppPath(), "src", "assets", "brainztorm-folder.icns");
+  return fs.existsSync(prod) ? prod : dev;
+}
+function setFolderIcon(folderPath) {
+  const icns = getIcnsPath();
+  if (!fs.existsSync(icns)) {
+    console.warn("Icon file not found:", icns);
+    return;
+  }
+  execFile("fileicon", ["set", folderPath, icns], (err) => {
+    if (err) console.warn("fileicon set failed:", err.message);
+  });
+}
 ipcMain.handle("project:new", async () => {
   const res = await dialog.showSaveDialog(win, {
     title: "Create New BRAINZTORM Project",
@@ -73,6 +89,7 @@ ipcMain.handle("project:new", async () => {
     version: 1
   };
   writeJson(path.join(folderPath, "project.json"), project);
+  setFolderIcon(folderPath);
   currentProjectRoot = folderPath;
   suggestedTitle = project.title;
   return true;
@@ -97,6 +114,7 @@ ipcMain.handle("project:open", async () => {
     });
     return false;
   }
+  setFolderIcon(folderPath);
   currentProjectRoot = folderPath;
   suggestedTitle = data.title;
   return true;
