@@ -14,12 +14,15 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Types available in the renderer */
+    "types": ["vite/client", "./src/types/global"],
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "electron"],
+  "include": ["src", "electron", "src/types"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

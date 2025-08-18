@@ -1,24 +1,32 @@
-import { ipcRenderer, contextBridge } from 'electron'
+// Minimal, safe bridge from renderer → main via IPC.
+import { contextBridge, ipcRenderer } from 'electron'
 
-// --------- Expose some API to the Renderer process ---------
-contextBridge.exposeInMainWorld('ipcRenderer', {
-  on(...args: Parameters<typeof ipcRenderer.on>) {
-    const [channel, listener] = args
-    return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args))
-  },
-  off(...args: Parameters<typeof ipcRenderer.off>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.off(channel, ...omit)
-  },
-  send(...args: Parameters<typeof ipcRenderer.send>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.send(channel, ...omit)
-  },
-  invoke(...args: Parameters<typeof ipcRenderer.invoke>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.invoke(channel, ...omit)
+type SavePayload = { title: string; description: string; bpm?: number }
+type ProjectData = { title: string; description: string; bpm?: number; projectRoot: string }
+
+contextBridge.exposeInMainWorld('api', {
+  // Create a new project (Save dialog)
+  newProject: async (): Promise<boolean> => {
+    return await ipcRenderer.invoke('project:new')
   },
 
-  // You can expose other APTs you need here.
-  // ...
+  // Open an existing project (folder picker)
+  openProject: async (): Promise<boolean> => {
+    return await ipcRenderer.invoke('project:open')
+  },
+
+  // Retrieve current project.json (if a project is open)
+  getProject: async (): Promise<ProjectData | null> => {
+    return await ipcRenderer.invoke('project:get')
+  },
+
+  // Suggested title after creating a new project (from folder name)
+  getSuggestedTitle: (): string | undefined => {
+    return ipcRenderer.sendSync('project:suggestedTitle')
+  },
+
+  // Save updates from Project Setup
+  saveProject: async (payload: SavePayload): Promise<boolean> => {
+    return await ipcRenderer.invoke('project:save', payload)
+  },
 })

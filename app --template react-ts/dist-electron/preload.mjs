@@ -1,22 +1,24 @@
 "use strict";
 const electron = require("electron");
-electron.contextBridge.exposeInMainWorld("ipcRenderer", {
-  on(...args) {
-    const [channel, listener] = args;
-    return electron.ipcRenderer.on(channel, (event, ...args2) => listener(event, ...args2));
+electron.contextBridge.exposeInMainWorld("api", {
+  // Create a new project (Save dialog)
+  newProject: async () => {
+    return await electron.ipcRenderer.invoke("project:new");
   },
-  off(...args) {
-    const [channel, ...omit] = args;
-    return electron.ipcRenderer.off(channel, ...omit);
+  // Open an existing project (folder picker)
+  openProject: async () => {
+    return await electron.ipcRenderer.invoke("project:open");
   },
-  send(...args) {
-    const [channel, ...omit] = args;
-    return electron.ipcRenderer.send(channel, ...omit);
+  // Retrieve current project.json (if a project is open)
+  getProject: async () => {
+    return await electron.ipcRenderer.invoke("project:get");
   },
-  invoke(...args) {
-    const [channel, ...omit] = args;
-    return electron.ipcRenderer.invoke(channel, ...omit);
+  // Suggested title after creating a new project (from folder name)
+  getSuggestedTitle: () => {
+    return electron.ipcRenderer.sendSync("project:suggestedTitle");
+  },
+  // Save updates from Project Setup
+  saveProject: async (payload) => {
+    return await electron.ipcRenderer.invoke("project:save", payload);
   }
-  // You can expose other APTs you need here.
-  // ...
 });
