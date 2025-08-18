@@ -1,30 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { colors, fonts, ui } from "./theme";
+import { colors, fonts, ui, ShimmerStyleTag, shimmerOverlayStyle } from "./theme";
 
-type SavePayload = {
-  title: string;
-  description: string;
-  bpm?: number;
-};
+type SavePayload = { title: string; description: string; bpm?: number };
 
 export default function ProjectSetup() {
   const navigate = useNavigate();
+  const api = (window as any).api;
 
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [bpm, setBpm] = useState<string>("");
 
-  // Snapshot to detect "dirty" state
   const initial = useRef<{ title: string; desc: string; bpm: string } | null>(null);
 
-  // Hydrate from disk if a project is open; otherwise fall back to suggested title
   useEffect(() => {
     let mounted = true;
-
     async function hydrate() {
-      // 1) Prefer the actual project.json on disk
-      const loaded = await window.api?.getProject?.();
+      const loaded = await api?.getProject?.();
       if (mounted && loaded) {
         const loadedBpm = typeof loaded.bpm === "number" ? String(loaded.bpm) : "";
         setTitle(loaded.title || "");
@@ -33,20 +26,15 @@ export default function ProjectSetup() {
         initial.current = { title: loaded.title || "", desc: loaded.description || "", bpm: loadedBpm };
         return;
       }
-
-      // 2) Fallback: suggested title right after "New Project"
-      const suggested = window.api?.getSuggestedTitle?.();
+      const suggested = api?.getSuggestedTitle?.();
       if (mounted) {
         setTitle(suggested || "");
         initial.current = { title: suggested || "", desc: "", bpm: "" };
       }
     }
-
     hydrate();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    return () => { mounted = false; };
+  }, [api]);
 
   const isDirty = useMemo(() => {
     const snap = initial.current;
@@ -56,11 +44,7 @@ export default function ProjectSetup() {
 
   const onSave = async () => {
     try {
-      const ok = await window.api?.saveProject?.({
-        title,
-        description: desc,
-        bpm: bpm ? Number(bpm) : undefined,
-      } as SavePayload);
+      const ok = await api?.saveProject?.({ title, description: desc, bpm: bpm ? Number(bpm) : undefined } as SavePayload);
       if (ok) navigate("/sections");
     } catch (e) {
       console.error(e);
@@ -78,16 +62,7 @@ export default function ProjectSetup() {
           >
             BRAINZTORM
           </span>
-          <span
-            aria-hidden
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              maskImage: "linear-gradient(75deg, transparent 40%, black 50%, transparent 60%)",
-              WebkitMaskImage: "linear-gradient(75deg, transparent 40%, black 50%, transparent 60%)",
-              background: "linear-gradient(90deg, rgba(255,255,255,0.0), rgba(255,255,255,0.65), rgba(255,255,255,0.0))",
-              animation: "shimmer 3s linear infinite",
-            }}
-          />
+          <span aria-hidden className="absolute inset-0 pointer-events-none" style={shimmerOverlayStyle()} />
         </div>
 
         <button
@@ -180,9 +155,8 @@ export default function ProjectSetup() {
         </button>
       </div>
 
-      <style>
-        {`@keyframes shimmer{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}`}
-      </style>
+      {/* Keyframes once for this screen */}
+      <ShimmerStyleTag />
     </div>
   );
 }
