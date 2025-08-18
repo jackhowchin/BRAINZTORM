@@ -29,7 +29,7 @@ export default function App() {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 p-6 overflow-auto bg-white">
+        <main className="flex-1 p-6 overflow-hidden bg-white">
           <Routes>
             <Route path="/" element={<StartScreen />} />
             <Route path="/project" element={<ProjectSetup />} />

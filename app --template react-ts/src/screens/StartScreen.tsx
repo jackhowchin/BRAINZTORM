@@ -6,7 +6,7 @@ export default function StartScreen() {
   const navigate = useNavigate();
   const api = (window as any).api;
 
-  // Prevent scrolling while StartScreen is shown
+  // Prevent body scrolling when StartScreen is active
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -16,27 +16,19 @@ export default function StartScreen() {
   }, []);
 
   const onNewProject = useCallback(async () => {
-    try {
-      const ok = await api?.newProject?.();
-      if (ok) navigate("/project");
-    } catch (e) {
-      console.error(e);
-    }
+    const ok = await api?.newProject?.();
+    if (ok) navigate("/project");
   }, [api, navigate]);
 
   const onOpenProject = useCallback(async () => {
-    try {
-      const ok = await api?.openProject?.();
-      if (ok) navigate("/project");
-    } catch (e) {
-      console.error(e);
-    }
+    const ok = await api?.openProject?.();
+    if (ok) navigate("/project");
   }, [api, navigate]);
 
   return (
-    // This wrapper fills the main content area; App.tsx sidebar remains separate
-    <div className="relative w-full h-screen overflow-hidden" style={{ fontFamily: fonts.display }}>
-      {/* Background MP4 (HD). 'object-cover' ensures it fills the area on any window size */}
+    // Fill parent container instead of fixed viewport
+    <div className="relative w-full h-full overflow-hidden" style={{ fontFamily: fonts.display }}>
+      {/* Background MP4 */}
       <video
         autoPlay
         muted
@@ -47,20 +39,15 @@ export default function StartScreen() {
         <source src="/start-bg.mp4" type="video/mp4" />
       </video>
 
-      {/* Optional veil for readability */}
+      {/* Optional veil */}
       <div className="absolute inset-0 bg-white/10 z-0" />
 
       {/* Foreground content */}
       <div className="relative z-10 flex items-center justify-center min-h-full">
         <div className="w-full max-w-3xl mx-auto px-6 py-12 rounded-2xl bg-white/70 backdrop-blur-sm border border-black/10 shadow-xl">
-          {/* Logo Row */}
+          {/* Logo */}
           <div className="flex items-center justify-center gap-5 mb-8">
-            <img
-              src="/BRAINZTORM_DEMO_LOGO_V1.png"
-              alt="BRAINZTORM brain"
-              className="w-20 h-20 drop-shadow"
-              draggable={false}
-            />
+            <img src="/BRAINZTORM_DEMO_LOGO_V1.png" alt="BRAINZTORM brain" className="w-20 h-20 drop-shadow" />
             <div
               className="text-4xl sm:text-5xl font-black tracking-widest relative select-none"
               style={{ fontFamily: fonts.display }}
@@ -71,17 +58,15 @@ export default function StartScreen() {
               >
                 BRAINZTORM
               </span>
-              {/* Centralized shimmer overlay */}
               <span aria-hidden className="absolute inset-0 pointer-events-none" style={shimmerOverlayStyle()} />
             </div>
           </div>
 
-          {/* Tagline */}
           <p className="text-center mb-8 text-gray-600" style={{ fontFamily: fonts.body }}>
             AI-powered asset generator for YouTube, social media & music videos
           </p>
 
-          {/* CTA Buttons */}
+          {/* Buttons */}
           <div className="flex items-center justify-center gap-3">
             <button
               className={`${ui.btnBase} ${ui.filledMagenta}`}
@@ -90,19 +75,13 @@ export default function StartScreen() {
             >
               New Project
             </button>
-
-            <button
-              className={`${ui.btnBase} ${ui.outlineBlue}`}
-              style={{ fontFamily: fonts.body }}
-              onClick={onOpenProject}
-            >
+            <button className={`${ui.btnBase} ${ui.outlineBlue}`} style={{ fontFamily: fonts.body }} onClick={onOpenProject}>
               Open Project
             </button>
           </div>
         </div>
       </div>
 
-      {/* Shimmer keyframes (pulled from centralized theme.tsx) */}
       <ShimmerStyleTag />
     </div>
   );
